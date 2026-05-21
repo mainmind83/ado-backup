@@ -1,0 +1,26 @@
+# ADO Backup Tool — configuration. Mount this file at /app/config.yaml.
+# Values in the form ${VAR_NAME} are resolved from the container environment.
+
+schedule: "0 2 * * *"            # Standard cron expression. Daily at 02:00.
+run_on_start: false              # Trigger one backup immediately on container start.
+
+azure_devops:
+  organization: "myorg"          # ADO organization (from dev.azure.com/myorg)
+  pat: "${ADO_PAT}"              # PAT via env var (recommended) or a plain string
+  projects:                      # Project names to back up. Use ["*"] for all.
+    - "Project1"
+    - "Project2"
+
+backup:
+  destination: "/backup"         # Mount a host volume here
+  retention_days: 30             # Delete backups older than N days. 0 = keep forever.
+  resources:
+    git: true                    # Clone all Git repos as bare mirrors
+    pipelines: true              # Export build + release pipeline definitions as JSON
+    wikis: true                  # Export project wikis as JSON + markdown
+
+logging:
+  level: "INFO"                  # DEBUG | INFO | WARNING | ERROR
+  file: "/logs/backup.log"       # Mount a host volume at /logs to persist logs
+  max_bytes: 10485760            # 10 MB log rotation size
+  backup_count: 5                # Number of rotated log files to keep

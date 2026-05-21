@@ -1,0 +1,11 @@
+services:
+  ado-backup:
+    image: ado-backup:latest
+    build: .
+    environment:
+      - ADO_PAT=${ADO_PAT}          # Set in your shell or a .env file
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - /mnt/nas/ado-backup:/backup
+      - /mnt/nas/ado-backup-logs:/logs
+    restart: unless-stopped

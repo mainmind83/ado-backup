@@ -1,0 +1,53 @@
+# docker-compose for QNAP Container Station.
+#
+# Layout used here: a sub-tree inside the existing `Almacen` shared folder
+# (pool 2), grouped under `BACKUPs/ado/`:
+#
+#     /share/Almacen/BACKUPs/ado/app/    -> project source (Dockerfile, src/, config.yaml)
+#     /share/Almacen/BACKUPs/ado/data/   -> backup destination
+#     /share/Almacen/BACKUPs/ado/logs/   -> persisted logs
+#
+# Steps:
+#   1. In File Station, inside `Almacen/BACKUPs/`, create `ado/`,
+#      `ado/app/`, `ado/data/`, `ado/logs/`. Copy the WHOLE project
+#      (Dockerfile, requirements.txt, src/, config.yaml) into `ado/app/`.
+#   2. Container Station -> Create -> Application -> paste this file.
+#      The `build:` directive makes Container Station build the image from
+#      the Dockerfile in /share/Almacen/BACKUPs/ado/app automatically — no
+#      SSH and no manual `docker build` needed.
+#   3. SMB permissions on `Almacen/BACKUPs/ado/` can be restricted to a
+#      single QNAP user (read-only is fine) — the container runs as root
+#      inside Docker and bypasses those ACLs, so it can still write
+#      `data/` and `logs/` regardless.
+
+services:
+  ado-backup:
+    image: ado-backup:latest
+    container_name: ado-backup
+    # Container Station builds the image from this context when the
+    # application is created. Absolute NAS path so it resolves regardless
+    # of where Container Station stages the compose file.
+    build:
+      context: /share/Almacen/BACKUPs/ado/app
+      dockerfile: Dockerfile
+    environment:
+      # PAT lives here on purpose. Two alternatives we evaluated and rejected
+      # on Container Station:
+      #   - `env_file:` pointing at a sibling `.env`: CS stages the compose
+      #     in its own internal dir and does NOT copy the `.env` next to it,
+      #     so the lookup fails with `The "ADO_PAT" variable is not set`.
+      #   - "Environment Variables" tab in Create → Application: stored in
+      #     plain text in CS's app config and shown unmasked in the GUI —
+      #     no real improvement over inlining it here.
+      # So: strip this line manually before exporting/sharing this YAML.
+      - ADO_PAT=replace-with-your-pat
+      # Time zone — must match the intent of your `schedule` cron expression.
+      - TZ=Europe/Madrid
+    volumes:
+      # config.yaml mounted read-only.
+      - /share/Almacen/BACKUPs/ado/app/config.yaml:/app/config.yaml:ro
+      # Backup destination — needs disk space.
+      - /share/Almacen/BACKUPs/ado/data:/backup
+      # Persisted logs.
+      - /share/Almacen/BACKUPs/ado/logs:/logs
+    restart: unless-stopped
