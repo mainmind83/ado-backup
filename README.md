@@ -20,6 +20,11 @@ controlled by a single [`config.yaml`](config.yaml).
 
 ## Quick start
 
+```bash
+git clone https://github.com/mainmind83/ado-backup.git
+cd ado-backup
+```
+
 1. Create a PAT in Azure DevOps with the [required scopes](#required-pat-scopes).
 2. Edit [`config.yaml`](config.yaml) (organization, projects, schedule, retention).
 3. Provide the PAT via the `ADO_PAT` environment variable.
