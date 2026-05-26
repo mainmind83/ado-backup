@@ -8,12 +8,22 @@ import time
 from datetime import datetime, timedelta
 
 from ado.client import ADOClient, ADOAuthError
-from backup.git_repos import backup_git_repos
+from backup.git_repos import backup_git_repos, dir_size
 from backup.pipelines import backup_pipelines
 from backup.wikis import backup_wikis
 from logger import get_logger
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H%M%S"
+
+
+def _fmt_size(n):
+    """Render a byte count as a short human-readable string (B/KB/MB/GB/TB)."""
+    size = float(n)
+    for unit in ("B", "KB", "MB", "GB"):
+        if size < 1024:
+            return f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} TB"
 
 
 def _is_timestamp(name):
@@ -100,7 +110,10 @@ def run_backup(config):
         return
 
     resources = config.backup.resources
-    summary = {"repos": 0, "pipelines": 0, "wikis": 0, "errors": 0}
+    summary = {
+        "repos": 0, "pipelines": 0, "wikis": 0,
+        "errors": 0, "fsck_errors": 0, "bytes": 0,
+    }
 
     for project in projects:
         project_dir = os.path.join(run_dir, project)
@@ -109,10 +122,12 @@ def run_backup(config):
 
         if resources.git:
             try:
-                summary["repos"] += backup_git_repos(
+                repos, fsck_errs = backup_git_repos(
                     client, config.azure_devops.organization,
                     config.azure_devops.pat, project, project_dir, prev_project,
                 )
+                summary["repos"] += repos
+                summary["fsck_errors"] += fsck_errs
             except ADOAuthError as exc:
                 log.error(f"{exc} — aborting run, previous backup preserved")
                 return
@@ -142,6 +157,10 @@ def run_backup(config):
                 log.error(f"wiki backup failed for {project}: {exc}")
                 summary["errors"] += 1
 
+        project_bytes = dir_size(project_dir)
+        summary["bytes"] += project_bytes
+        log.info(f"project {project} done — {_fmt_size(project_bytes)}")
+
     try:
         _cleanup_retention(
             destination, config.backup.retention_days, timestamp, log
@@ -153,6 +172,7 @@ def run_backup(config):
     log.info(
         f"backup run finished in {duration:.1f}s — "
         f"repos={summary['repos']} pipelines={summary['pipelines']} "
-        f"wikis={summary['wikis']} errors={summary['errors']}"
+        f"wikis={summary['wikis']} fsck_errors={summary['fsck_errors']} "
+        f"errors={summary['errors']} total={_fmt_size(summary['bytes'])}"
     )
     return summary

@@ -55,7 +55,7 @@ def test_run_creates_timestamped_folder(make_config):
     config = make_config()
 
     with patch.object(runner, "ADOClient"), \
-         patch.object(runner, "backup_git_repos", return_value=1), \
+         patch.object(runner, "backup_git_repos", return_value=(1, 0)), \
          patch.object(runner, "backup_pipelines", return_value=1), \
          patch.object(runner, "backup_wikis", return_value=1):
         runner.run_backup(config)

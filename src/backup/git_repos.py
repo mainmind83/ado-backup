@@ -13,7 +13,7 @@ def _inject_pat(clone_url, pat):
     return clone_url.replace("https://", f"https://oauth2:{pat}@", 1)
 
 
-def _dir_size(path):
+def dir_size(path):
     """Total size in bytes of all files under path (0 if path does not exist)."""
     total = 0
     for root, _, files in os.walk(path):
@@ -25,12 +25,23 @@ def _dir_size(path):
     return total
 
 
+def _fsck_bare(target):
+    """Run `git fsck` on a bare mirror. Returns (ok, stderr_text)."""
+    result = subprocess.run(
+        ["git", "fsck", "--no-progress"],
+        cwd=target, check=False, capture_output=True, text=True,
+    )
+    return result.returncode == 0, (result.stderr or "").strip()
+
+
 def backup_git_repos(client, organization, pat, project, dest_dir, previous_dir=None):
     """Back up all Git repos of a project as bare mirrors.
 
     If a repo already exists in the previous backup, it is copied forward and
     refreshed with `git remote update` (incremental). Otherwise it is cloned
-    fresh with `git clone --mirror`. Returns the number of repos backed up.
+    fresh with `git clone --mirror`. Each mirror is then verified with
+    `git fsck`. Returns `(count, fsck_errors)` where `count` is the number of
+    mirrors written to disk and `fsck_errors` is how many failed verification.
     """
     log = get_logger()
     git_dir = os.path.join(dest_dir, "git")
@@ -41,6 +52,7 @@ def backup_git_repos(client, organization, pat, project, dest_dir, previous_dir=
     )
     repos = data.get("value", [])
     count = 0
+    fsck_errors = 0
 
     for repo in repos:
         name = repo["name"]
@@ -68,10 +80,18 @@ def backup_git_repos(client, organization, pat, project, dest_dir, previous_dir=
                 )
                 mode = "full clone"
 
+            ok, stderr = _fsck_bare(target)
+            if ok:
+                verify = "verified"
+            else:
+                verify = "FSCK FAILED"
+                fsck_errors += 1
+                log.error(f"git: fsck failed for {project}/{name}: {stderr}")
+
             duration = time.time() - start
             log.info(
-                f"git: {project}/{name} backed up ({mode}, "
-                f"{_dir_size(target)} bytes, {duration:.1f}s)"
+                f"git: {project}/{name} backed up ({mode}, {verify}, "
+                f"{dir_size(target)} bytes, {duration:.1f}s)"
             )
             count += 1
         except subprocess.CalledProcessError as exc:
@@ -82,4 +102,4 @@ def backup_git_repos(client, organization, pat, project, dest_dir, previous_dir=
         except OSError as exc:
             log.error(f"git: failed to back up {project}/{name}: {exc}")
 
-    return count
+    return count, fsck_errors
