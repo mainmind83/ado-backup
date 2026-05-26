@@ -60,6 +60,18 @@ Tips:
 - Disable any resource you don't back up in [`config.yaml`](config.yaml)
   (`backup.resources`) and you can drop the matching scope.
 
+## Updating
+
+See [`UPDATING.md`](UPDATING.md) for the full upgrade flow on QNAP
+Container Station (GUI-driven, no SSH required) plus the optional
+SSH/scripted path and common troubleshooting (ZFS build errors, PAT
+issues).
+
+The container always logs its version in the startup banner
+(`ADO Backup Tool vX.Y.Z starting`) and checks the GitHub Releases API
+once per boot, so `tail logs/backup.log` is enough to see both the
+current build and whether a newer release exists.
+
 ## Configuration
 
 See [`config.yaml`](config.yaml) for the full annotated schema. Any value

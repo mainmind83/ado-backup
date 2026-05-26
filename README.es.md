@@ -63,6 +63,19 @@ Consejos:
   [`config.yaml`](config.yaml) (`backup.resources`) y podrás eliminar el
   scope correspondiente.
 
+## Actualización
+
+Mira [`UPDATING.es.md`](UPDATING.es.md) para el flujo completo de
+actualización en QNAP Container Station — tanto la vía GUI (sin SSH, que
+mantiene la app gestionada por CS con todos los botones) como la vía SSH
+scripteada con `update.sh`, además del troubleshooting habitual (errores
+de ZFS al construir, problemas con el PAT).
+
+El contenedor loguea su versión en el banner de arranque (`ADO Backup
+Tool vX.Y.Z starting`) y consulta la API de GitHub Releases una vez por
+boot, así que con `tail logs/backup.log` ves la versión actual y si hay
+una más nueva publicada.
+
 ## Configuración
 
 Mira [`config.yaml`](config.yaml) para el esquema completo anotado. Cualquier
