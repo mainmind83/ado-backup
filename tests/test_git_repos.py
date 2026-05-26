@@ -85,6 +85,32 @@ def test_clone_failure_is_logged_and_skipped(tmp_path):
     assert (count, fsck_errors) == (1, 0)
 
 
+def test_url_encodes_project_and_repo_with_spaces(tmp_path):
+    """ADO names may contain spaces, '&', '#', etc. URLs must be encoded
+    or git/curl reject them ("URL rejected: Malformed input to a URL function").
+    """
+    client = _client(["My Repo"])
+    dest = tmp_path / "Project1"
+
+    with patch("backup.git_repos.subprocess.run", side_effect=_ok_run) as run:
+        count, fsck_errors = backup_git_repos(
+            client, "my org", "pat", "My Project",
+            str(dest), previous_dir=None,
+        )
+
+    assert (count, fsck_errors) == (1, 0)
+    # The project listing path must be URL-encoded.
+    api_path = client.get.call_args.args[0]
+    assert "My%20Project" in api_path
+    assert " " not in api_path
+    # The clone URL must be fully encoded — none of org, project, repo name leaks a space.
+    clone_url = run.call_args_list[0].args[0][3]
+    assert "my%20org" in clone_url
+    assert "My%20Project/_git/My%20Repo" in clone_url
+    # No raw space anywhere in the constructed URL (after the oauth2: prefix).
+    assert " " not in clone_url
+
+
 def test_fsck_failure_counts_but_keeps_backup(tmp_path):
     client = _client(["RepoA"])
     dest = tmp_path / "Project1"

@@ -4,6 +4,7 @@ import json
 import os
 import re
 
+from ado.client import encode_path_segment
 from logger import get_logger
 
 # Release pipelines live on a separate host.
@@ -40,7 +41,7 @@ def backup_pipelines(client, organization, project, dest_dir):
 
     # Build pipeline definitions.
     build_data = client.get(
-        f"/{project}/_apis/build/definitions",
+        f"/{encode_path_segment(project)}/_apis/build/definitions",
         params={"api-version": "7.1", "$expand": "process"},
     )
     for definition in build_data.get("value", []):
@@ -50,7 +51,8 @@ def backup_pipelines(client, organization, project, dest_dir):
 
     # Release pipeline definitions (separate vsrm host).
     release_data = client.get(
-        f"{VSRM_BASE}/{organization}/{project}/_apis/release/definitions",
+        f"{VSRM_BASE}/{encode_path_segment(organization)}"
+        f"/{encode_path_segment(project)}/_apis/release/definitions",
         params={"api-version": "7.1", "$expand": "environments"},
     )
     for definition in release_data.get("value", []):

@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import time
 
+from ado.client import encode_path_segment
 from logger import get_logger
 
 
@@ -48,7 +49,8 @@ def backup_git_repos(client, organization, pat, project, dest_dir, previous_dir=
     os.makedirs(git_dir, exist_ok=True)
 
     data = client.get(
-        f"/{project}/_apis/git/repositories", params={"api-version": "7.1"}
+        f"/{encode_path_segment(project)}/_apis/git/repositories",
+        params={"api-version": "7.1"},
     )
     repos = data.get("value", [])
     count = 0
@@ -73,7 +75,12 @@ def backup_git_repos(client, organization, pat, project, dest_dir, previous_dir=
                 )
                 mode = "incremental"
             else:
-                url = f"https://dev.azure.com/{organization}/{project}/_git/{name}"
+                url = (
+                    f"https://dev.azure.com/"
+                    f"{encode_path_segment(organization)}/"
+                    f"{encode_path_segment(project)}/_git/"
+                    f"{encode_path_segment(name)}"
+                )
                 subprocess.run(
                     ["git", "clone", "--mirror", _inject_pat(url, pat), target],
                     check=True, capture_output=True, text=True,

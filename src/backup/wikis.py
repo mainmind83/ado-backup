@@ -9,6 +9,7 @@ import os
 
 import requests
 
+from ado.client import encode_path_segment
 from logger import get_logger
 
 
@@ -37,7 +38,8 @@ def backup_wikis(client, project, dest_dir):
     count = 0
 
     data = client.get(
-        f"/{project}/_apis/wiki/wikis", params={"api-version": "7.1"}
+        f"/{encode_path_segment(project)}/_apis/wiki/wikis",
+        params={"api-version": "7.1"},
     )
 
     for wiki in data.get("value", []):
@@ -53,7 +55,7 @@ def backup_wikis(client, project, dest_dir):
         # List the page tree.
         try:
             tree = client.get(
-                f"/{project}/_apis/wiki/wikis/{wiki_id}/pages",
+                f"/{encode_path_segment(project)}/_apis/wiki/wikis/{wiki_id}/pages",
                 params={"api-version": "7.1", "recursionLevel": "full"},
             )
         except requests.HTTPError as exc:
@@ -71,7 +73,7 @@ def backup_wikis(client, project, dest_dir):
         for page_path in page_paths:
             try:
                 content = client.get_text(
-                    f"/{project}/_apis/wiki/wikis/{wiki_id}/pages",
+                    f"/{encode_path_segment(project)}/_apis/wiki/wikis/{wiki_id}/pages",
                     params={"path": page_path, "api-version": "7.1"},
                     headers={"Accept": "text/plain"},
                 )

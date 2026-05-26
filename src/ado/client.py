@@ -5,6 +5,7 @@ limiting and continuation-token pagination.
 """
 
 import time
+from urllib.parse import quote
 
 import requests
 
@@ -12,6 +13,17 @@ from logger import get_logger
 
 DEFAULT_TIMEOUT = 30
 DEFAULT_MAX_RETRIES = 3
+
+
+def encode_path_segment(s):
+    """URL-encode an Azure DevOps path segment (org / project / repo name).
+
+    Spaces, '#', '&', '?' and other reserved characters are legal in ADO
+    object names but break URL construction unless escaped. `safe=""` makes
+    `quote` encode '/' too — important because a segment must not bleed into
+    the next path component.
+    """
+    return quote(str(s), safe="")
 
 
 class ADOError(Exception):
