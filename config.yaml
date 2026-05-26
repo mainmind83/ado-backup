@@ -1,5 +1,11 @@
 # ADO Backup Tool — configuration. Mount this file at /app/config.yaml.
 # Values in the form ${VAR_NAME} are resolved from the container environment.
+#
+# This file is re-read at the start of every scheduled run, so edits to
+# `azure_devops` (organization, pat, projects) and `backup` (destination,
+# retention_days, resources) take effect on the next run without restarting.
+# `schedule`, `run_on_start` and `logging` are bound at startup — changing
+# them still requires a container restart.
 
 schedule: "0 2 * * *"            # Standard cron expression. Daily at 02:00.
 run_on_start: false              # Trigger one backup immediately on container start.

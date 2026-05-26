@@ -69,6 +69,12 @@ Mira [`config.yaml`](config.yaml) para el esquema completo anotado. Cualquier
 valor escrito como `${VAR_NAME}` se resuelve desde el entorno del contenedor
 en el arranque; si la variable falta, el contenedor sale con un error claro.
 
+`config.yaml` se relee al inicio de cada ejecución programada, así que los
+cambios en `azure_devops` y `backup` se aplican en el siguiente run sin
+reiniciar el contenedor. `schedule`, `run_on_start` y `logging` se enlazan en
+el arranque y siguen requiriendo reinicio. Si una edición queda inválida se
+registra un error y ese run se omite; el último backup correcto se conserva.
+
 Opciones clave:
 
 - `schedule` — expresión cron estándar (por defecto `0 2 * * *`, diaria a las 02:00).

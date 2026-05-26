@@ -66,6 +66,12 @@ See [`config.yaml`](config.yaml) for the full annotated schema. Any value
 written as `${VAR_NAME}` is resolved from the container environment at startup;
 if the variable is missing the container exits with a clear error.
 
+`config.yaml` is re-read at the start of every scheduled run, so edits to
+`azure_devops` and `backup` take effect on the next run without restarting
+the container. `schedule`, `run_on_start` and `logging` are bound at startup
+and still require a restart. An invalid edit logs an error and skips that
+run; the previous good run is preserved.
+
 Key options:
 
 - `schedule` — standard cron expression (default `0 2 * * *`, daily at 02:00).

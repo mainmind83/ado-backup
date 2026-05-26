@@ -48,7 +48,7 @@ def main(argv=None):
     log.info(f"  retention    : {config.backup.retention_days} days")
     log.info("=" * 64)
 
-    start_scheduler(config)
+    start_scheduler(config_path, config)
 
 
 if __name__ == "__main__":

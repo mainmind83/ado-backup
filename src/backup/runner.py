@@ -86,6 +86,10 @@ def run_backup(config):
 
     try:
         projects = _resolve_projects(client, config.azure_devops.projects)
+        if config.azure_devops.projects == ["*"]:
+            log.info(
+                f"resolved '*' to {len(projects)} project(s) from /_apis/projects"
+            )
     except ADOAuthError as exc:
         log.error(f"{exc} — aborting run, previous backup preserved")
         shutil.rmtree(run_dir, ignore_errors=True)
